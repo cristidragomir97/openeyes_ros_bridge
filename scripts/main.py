@@ -1,6 +1,7 @@
 import threading, time, serial, rospy
 from std_msgs.msg import String, Int8
 from colorama import Fore
+from hw_bridge.srv import *
 
 Q_SIZE = 10
 PORT = '/dev/ttyUSB0'
@@ -47,7 +48,7 @@ def pub():
     return gsr_pub, hr_pub, button_pub
 
 def server():
-    srv = rospy.Service('haptic_out', haptic, handle_req)
+    srv = rospy.Service('haptic_out', HapticService,  handle_req)
     rospy.spin()
     
 
