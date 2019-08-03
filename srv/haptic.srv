@@ -1,0 +1,5 @@
+byte device
+byte n
+byte[] effects
+---
+bool success
