@@ -7,32 +7,40 @@ Q_SIZE = 10
 PORT = '/dev/ttyUSB0'
 BAUD = 112500
 
+global serial_port
   
-def read_from_port(ser, gsr_pub, button_pub, hr_pub):
+def read_from_port(ser, gsr_pub, button_pub, hr_pub, ack_queue):
     while True:
         text = ser.readline().decode()
+     
         if text:
-            if text[0] == 'g':
+            if text[0] == 'k':
+                print(Fore.RED + 'Got ACK : {}'.format(text) + Fore.RESET )
+
+            elif text[0] == 'g':
                 val = text[1:len(text)]
-                print(Fore.YELLOW + '[GSR]' + val)
                 gsr_pub.publish(val)
 
             elif text[0] == 'b':
                 val = text[1:len(text)]
-                print(Fore.RED + '[BTN]' + val)
                 button_pub.publish(val)
 
             elif text[0] == 'h':
                 val = text[1:len(text)]
-                print(Fore.GREEN + '[HEART]' + val)
                 hr_pub.publish(val)
-                 
-            #elif text[0] == 'k':
+                
 
-        time.sleep(0.3)
+        time.sleep(0.1)
 
 def handle_req(req):
-    pass
+    message = 'h{}{}'.format(req.device, req.n)
+  
+    for effect in req.effects:
+       message = '{},{}'.format(message, effect)
+
+    print(message)
+    serial_port.write(str.encode(message + '\n'))
+    return True
 
 def pub():
 
@@ -48,23 +56,21 @@ def pub():
     return gsr_pub, hr_pub, button_pub
 
 def server():
-    srv = rospy.Service('haptic_out', HapticService,  handle_req)
+    srv = rospy.Service('HapticService', HapticService,  handle_req)
     rospy.spin()
     
 
 if __name__ == '__main__':
     rospy.init_node('bridge')
-     
     ack_queue = []
     
     try:
         gsr_pub, hr_pub, button_pub = pub()
-        server()
-        
+    
         serial_port = serial.Serial(PORT, BAUD, timeout=0)
         thread = threading.Thread(target=read_from_port, args=(serial_port, gsr_pub, hr_pub, button_pub, ack_queue,  ))
         thread.start()
-    
+        server()
         
     except rospy.ROSInterruptException:
         pass
